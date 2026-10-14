@@ -160,36 +160,22 @@ print(check_collinearity(best_mod))
 
 # ---- 7. EFFECT SIZES --------------------------------------------------------
 # Odds ratios with profile-likelihood 95% CIs (per 1-SD increase in predictor).
+# Exported for reporting purposes
 
-odds_ratios <- tidy(best_mod, conf.int = TRUE) %>%
-  mutate(
-    odds_ratio = exp(estimate),
-    or_low     = exp(conf.low),
-    or_high    = exp(conf.high)
-  ) %>%
-  select(term, odds_ratio, or_low, or_high, p.value)
+odds_ratio_table <- odds_ratios %>%
+  mutate(across(c(odds_ratio, or_low, or_high), ~ round(.x, 2)),
+         p.value = round(p.value, 3)) %>%
+  rename(
+    Covariate  = term,
+    Odds_Ratio = odds_ratio,
+    Lower_CI   = or_low,
+    Upper_CI   = or_high,
+    p_value    = p.value
+  )
 
-print(odds_ratios)
-
-# Coefficient table (log-odds scale) with Wald 95% CIs, exported for reporting.
-coef_table <- summary(best_mod)$coefficients
-
-best_mod_results <- data.frame(
-  Covariate = rownames(coef_table),
-  Estimate  = coef_table[, "Estimate"],
-  Std_Error = coef_table[, "Std. Error"],
-  Lower_CI  = coef_table[, "Estimate"] - 1.96 * coef_table[, "Std. Error"],
-  Upper_CI  = coef_table[, "Estimate"] + 1.96 * coef_table[, "Std. Error"],
-  p_value   = coef_table[, "Pr(>|z|)"],
-  row.names = NULL
-)
-
-best_mod_results[, 2:5] <- round(best_mod_results[, 2:5], 2)
-
-write.csv(best_mod_results,
-          file.path(OUTPUT_DIR, "best_model_coefficients.csv"),
+write.csv(odds_ratio_table,
+          file.path(OUTPUT_DIR, "best_model_odds_ratios.csv"),
           row.names = FALSE)
-
 
 # ---- 8. GOODNESS OF FIT (DHARMa) --------------------------------------------
 # Simulation-based scaled residuals. For an adequately fitting model:
